@@ -57,10 +57,33 @@ void differential_test() {
   for (std::uint64_t key = 0; key < 5000; ++key) {
     assert(tree.insert_or_assign(key, key + 1));
   }
+  auto range = std::vector<std::uint64_t>{};
+  tree.for_each_from(123, 7, [&](const auto& key, const auto&) {
+    range.push_back(key);
+  });
+  assert((range == std::vector<std::uint64_t>{123, 124, 125, 126, 127, 128, 129}));
+  range.clear();
+  tree.for_each_from(4999, 7, [&](const auto& key, const auto&) {
+    range.push_back(key);
+  });
+  assert((range == std::vector<std::uint64_t>{4999}));
+  range.clear();
+  tree.for_each_from(5000, 7, [&](const auto& key, const auto&) {
+    range.push_back(key);
+  });
+  tree.for_each_from(0, 0, [&](const auto& key, const auto&) {
+    range.push_back(key);
+  });
+  assert(range.empty());
   for (std::uint64_t key = 0; key < 5000; key += 2) {
     assert(tree.erase(key));
     assert(!tree.erase(key));
   }
+  range.clear();
+  tree.for_each_from(122, 3, [&](const auto& key, const auto&) {
+    range.push_back(key);
+  });
+  assert((range == std::vector<std::uint64_t>{123, 125, 127}));
   for (auto key = 4999; key > 0; key -= 2) {
     assert(tree.erase(static_cast<std::uint64_t>(key)));
   }

@@ -107,6 +107,12 @@ class BTreeMap {
     if (root_) visit(*root_, visitor);
   }
 
+  // Visits at most limit entries, starting at the first key >= start.
+  template <class Visitor>
+  void for_each_from(const Key& start, std::size_t limit, Visitor&& visitor) const {
+    if (root_ && limit != 0) visit_from(*root_, start, limit, visitor);
+  }
+
  private:
   static constexpr std::size_t max_keys() { return 2 * MinDegree - 1; }
 
@@ -232,6 +238,35 @@ class BTreeMap {
       visitor(node.entries[index].first, node.entries[index].second);
     }
     if (!node.leaf) visit(*node.children.back(), visitor);
+  }
+
+  template <class Visitor>
+  static void visit_limited(const Node& node, std::size_t& remaining,
+                            Visitor& visitor) {
+    for (std::size_t index = 0; index < node.entries.size() && remaining != 0;
+         ++index) {
+      if (!node.leaf) visit_limited(*node.children[index], remaining, visitor);
+      if (remaining == 0) return;
+      visitor(node.entries[index].first, node.entries[index].second);
+      --remaining;
+    }
+    if (!node.leaf && remaining != 0) {
+      visit_limited(*node.children.back(), remaining, visitor);
+    }
+  }
+
+  template <class Visitor>
+  void visit_from(const Node& node, const Key& start, std::size_t& remaining,
+                  Visitor& visitor) const {
+    auto index = position(node, start);
+    if (!node.leaf) visit_from(*node.children[index], start, remaining, visitor);
+    for (; index < node.entries.size() && remaining != 0; ++index) {
+      visitor(node.entries[index].first, node.entries[index].second);
+      --remaining;
+      if (!node.leaf && remaining != 0) {
+        visit_limited(*node.children[index + 1], remaining, visitor);
+      }
+    }
   }
 
   std::unique_ptr<Node> root_;
