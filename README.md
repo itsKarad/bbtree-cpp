@@ -53,15 +53,29 @@ Measured November 14, 2026, on an Apple M1 Pro MacBook Pro with 16 GB RAM. C++ u
 
 The blog also times native Rust batch APIs. On this machine, Rust `bbtree` measured 91.55, 99.37, and 139.59 ns per key for batches of 64 lookups with `u64`, UUID, and JSON-shaped keys respectively; batches of 16 inserts measured 149.16, 169.73, and 229.92 ns per key. This C++ map has no equivalent batch API, so the C++ benchmark reports those rows as unsupported.
 
-The C++ benchmark runs with:
+### Run the workload locally
+
+Run the script from the repository root. It builds the Release benchmark and runs the 10 million entry `u64` and UUID workloads. Each workload times lookups, updates, 100-entry scans, and one full insert pass.
 
 ```sh
-./build/bbtree_bench 10000000 1000 --keys u64
-./build/bbtree_bench 10000000 1000 --keys uuid
-./build/bbtree_bench 10000000 1000 --keys str-json --keys-file /path/to/str-json.keys
+./scripts/run_workload.sh
 ```
 
-The key file is the text format produced by `bbtree-scaling --dump-keys`: a `present absent` count header, then one key per line, present keys first. `--keys wiki-titles --keys-file /path/to/wiki.keys` uses the same format. The original Wikipedia dataset was unavailable from the public benchmark-data release when these runs were made, so that tab is unmeasured.
+Pass `--entries` and `--duration-ms` to change the map size and the lookup, update, and scan timer. Inserts always run one full pass. For example, this command runs 100,000 entries with 250 ms per timed workload.
+
+```sh
+./scripts/run_workload.sh --entries 100000 --duration-ms 250
+```
+
+To add a string-key workload, pass a key kind and a key file exported by the Rust evaluation harness:
+
+```sh
+./scripts/run_workload.sh --keys str-json --keys-file /path/to/str-json.keys
+```
+
+The file starts with the present and absent key counts. Each following line holds one key, with present keys first. Use `wiki-titles` with the same format. The original Wikipedia dataset was unavailable from the public benchmark-data release when these runs were made, so that tab is unmeasured.
+
+The benchmark prints operation counts, elapsed time, nanoseconds per operation, and a checksum. Batch lookup and insert rows print as unsupported because the C++ map has no batch API.
 
 The Rust measurements used [evaluation commit `01229ec`](https://github.com/XiangpengHao/bbtree-eval/commit/01229ec0c07c30a89ae379de3179f4ce5b3b9361) with [library commit `23aeb9d`](https://github.com/XiangpengHao/bbtree/commit/23aeb9dca642efa829a96736e065157307bdbe72). A temporary adapter outside this repository unwrapped the newer library's `Result`-returning insert calls; it did not change the workload loops. The clean library revision recorded with the blog's original machine logs does not build with the public evaluation harness's available revisions. Rust's shared map is populated on all available CPUs before the single-thread read workloads, while the C++ map is populated serially. These are local reruns of the blog's scalar workloads, not a reproduction of its original Ryzen 9 9900X results or its concurrent, memory, and end-to-end cards.
 
