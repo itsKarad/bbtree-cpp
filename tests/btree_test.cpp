@@ -43,6 +43,19 @@ void differential_test() {
       tree.for_each([&](const auto& k, const auto& v) { entries.emplace_back(k, v); });
       assert(entries.size() == reference.size());
       assert(std::equal(entries.begin(), entries.end(), reference.begin()));
+
+      const auto start = random() % 2000;
+      const auto limit = static_cast<std::size_t>(random() % 40);
+      entries.clear();
+      tree.for_each_from(start, limit, [&](const auto& k, const auto& v) {
+        entries.emplace_back(k, v);
+      });
+      auto expected_range = std::vector<std::pair<std::uint64_t, std::uint64_t>>{};
+      for (auto it = reference.lower_bound(start);
+           it != reference.end() && expected_range.size() < limit; ++it) {
+        expected_range.push_back(*it);
+      }
+      assert(entries == expected_range);
     }
   }
 
