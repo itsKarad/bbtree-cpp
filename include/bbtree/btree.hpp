@@ -56,6 +56,10 @@ class BTreeMap {
     return nullptr;
   }
 
+  Value* get_mut(const Key& key) {
+    return const_cast<Value*>(std::as_const(*this).get(key));
+  }
+
   // Returns true for a new key, false when an existing value was replaced.
   bool insert_or_assign(Key key, Value value) {
     if (!root_) root_ = std::make_unique<Node>(true);

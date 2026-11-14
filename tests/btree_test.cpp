@@ -111,6 +111,9 @@ int main() {
   assert(tree.insert_or_assign("a", "one"));
   assert(!tree.insert_or_assign("a", "two"));
   assert(*tree.get("a") == "two");
+  *tree.get_mut("a") = "three";
+  assert(*tree.get("a") == "three");
+  assert(tree.get_mut("missing") == nullptr);
   assert(tree.erase("a"));
   assert(tree.get("a") == nullptr);
 }
